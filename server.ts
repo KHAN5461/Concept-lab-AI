@@ -226,7 +226,8 @@ app.post('/api/lib/generate-concept-map', asyncHandler(async (req: express.Reque
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err);
   if (err?.message?.includes('API key not valid') || err?.status === 400 || err?.message?.includes('API key was reported as leaked') || err?.message?.includes('API_KEY environment variable is not set')) {
-    return res.status(400).json({ error: 'API Key Error: Your AI API Key is invalid or unset. Please update it in Settings > Secrets or .env file.' });
+    const context = process.env.VERCEL === '1' ? 'Vercel Project Settings > Environment Variables' : 'Settings > Secrets or .env file';
+    return res.status(400).json({ error: `API Key Error: Your AI API Key is invalid or unset. Please update it in ${context}.` });
   }
   res.status(500).json({ error: err.message || 'Internal Server Error' });
 });

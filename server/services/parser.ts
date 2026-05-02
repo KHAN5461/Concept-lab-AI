@@ -1,10 +1,17 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const pdfModule = require('pdf-parse');
-const PDFParse = pdfModule.PDFParse;
+
+// Polyfill for Vercel/Node environment where pdf-parse might expect browser globals
+if (typeof (global as any).DOMMatrix === 'undefined') {
+  (global as any).DOMMatrix = class {};
+}
 
 export async function parsePdf(buffer: Buffer): Promise<string> {
   try {
+    // Lazy load to avoid top-level crashes if optional dependencies fail
+    const pdfModule = require('pdf-parse');
+    const PDFParse = pdfModule.PDFParse;
+
     // Check for the class-based API (pdf-parse 2.4.x)
     if (typeof PDFParse === 'function') {
       const parser = new PDFParse({ data: buffer });
@@ -15,7 +22,14 @@ export async function parsePdf(buffer: Buffer): Promise<string> {
     // Fallback to traditional function API
     const pdf = typeof pdfModule === 'function' ? pdfModule : pdfModule.default;
     if (typeof pdf === 'function') {
-      const data = await pdf(buffer);
+      const data = await pdf(buffer, {
+        // Disable pagerender to avoid canvas dependency issues
+        pagerender: (pageData: any) => {
+          return pageData.getTextContent().then((textContent: any) => {
+             return textContent.items.map((s: any) => s.str).join(' ');
+          });
+        }
+      });
       return data.text || '';
     }
 

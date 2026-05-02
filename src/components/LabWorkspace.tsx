@@ -986,17 +986,20 @@ export function LabWorkspace({ onClose, isSplit }: { onClose?: () => void, isSpl
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex flex-col bg-background w-full"
+              className="absolute inset-0 flex flex-col bg-background w-full overflow-hidden"
             >
-              <ScrollArea className="flex-1 h-full relative">
-                <div className="max-w-4xl mx-auto w-full px-4 py-8 md:px-12 flex flex-col min-h-full">
+              <div 
+                className="flex-1 overflow-y-auto relative scroll-smooth px-4 pt-4"
+                style={{ scrollbarWidth: 'thin' }}
+              >
+                <div className="max-w-4xl mx-auto w-full pt-4 pb-12 md:px-12 flex flex-col min-h-full">
                   {!selectedSourceId ? (
                     <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh] text-center px-6">
                       <div className="w-16 h-16 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 shadow-sm">
                         <FileSearch className="w-8 h-8 text-primary" />
                       </div>
-                      <h2 className="text-2xl font-serif font-black tracking-tighter mb-3 italic">Establish Grounding</h2>
-                      <p className="text-muted-foreground text-sm max-w-[280px] font-medium leading-relaxed opacity-60">
+                      <h2 className="text-2xl font-serif font-black tracking-tighter mb-3 italic text-foreground">Establish Grounding</h2>
+                      <p className="text-muted-foreground text-sm max-w-[280px] font-medium leading-relaxed opacity-70">
                         Please select or ingest a source material to initialize the grounding pipeline.
                       </p>
                     </div>
@@ -1005,13 +1008,13 @@ export function LabWorkspace({ onClose, isSplit }: { onClose?: () => void, isSpl
                       <div className="w-12 h-12 rounded-2xl bg-muted border border-border/40 flex items-center justify-center mb-6 opacity-40">
                         <MessageSquare className="w-6 h-6" />
                       </div>
-                      <h2 className="text-xl font-serif font-black tracking-tight mb-2 italic opacity-60">Synthesis Stream Empty</h2>
+                      <h2 className="text-xl font-serif font-black tracking-tight mb-2 italic opacity-60 text-foreground">Synthesis Stream Empty</h2>
                       <p className="text-muted-foreground text-[11px] max-w-[240px] font-mono font-bold uppercase tracking-widest opacity-30">
                         Awaiting natural language input for document grounding.
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-8 pb-12">
+                    <div className="space-y-8 pb-4">
                       {chatHistory.map((msg, i) => (
                         <LabChatMessage key={msg.id} m={msg} isLast={i === chatHistory.length - 1} />
                       ))}
@@ -1030,15 +1033,14 @@ export function LabWorkspace({ onClose, isSplit }: { onClose?: () => void, isSpl
                     </div>
                   )}
                 </div>
-              </ScrollArea>
+              </div>
 
-              {/* STICKY CHAT INPUT - Floating Version */}
-              <div className="relative z-30 px-4 pb-6 md:px-8 md:pb-8">
+              {/* FLOATING CHAT INPUT */}
+              <div className="px-4 pb-6 md:px-8 md:pb-10 flex-shrink-0 bg-background pt-2 relative z-30 border-t border-border/40">
                 <div className="max-w-4xl mx-auto w-full relative">
-                  <div className="absolute -top-12 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent pointer-events-none" />
-                  <div className="relative group shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-card/80 backdrop-blur-xl border border-border/80 rounded-2xl md:rounded-[1.5rem] overflow-hidden focus-within:ring-4 focus-within:ring-primary/5 focus-within:border-primary/50 transition-all duration-300">
+                  <div className="relative group shadow-sm bg-card border border-border/80 rounded-2xl md:rounded-[1.75rem] overflow-hidden focus-within:ring-4 focus-within:ring-primary/10 transition-all duration-500">
                     <textarea 
-                      className="w-full min-h-[50px] md:min-h-[64px] p-4 pr-14 md:pr-20 bg-transparent resize-none outline-none text-foreground text-sm md:text-[16px] placeholder:text-muted-foreground/50 font-serif leading-relaxed"
+                      className="w-full min-h-[50px] md:min-h-[72px] p-5 pr-14 md:pr-20 bg-transparent resize-none outline-none text-foreground text-sm md:text-[17px] placeholder:text-muted-foreground/50 font-serif leading-relaxed"
                       placeholder={selectedSourceId ? "Analyze grounded context..." : "Awaiting document..."}
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
