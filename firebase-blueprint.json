@@ -1,0 +1,117 @@
+{
+  "entities": {
+    "Session": {
+      "title": "Session",
+      "description": "A user's chat session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "messages": { "type": "array" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "title", "messages", "updatedAt"]
+    },
+    "LabSession": {
+      "title": "Lab Session",
+      "description": "A user's document analysis and chat session in the lab",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "sources": { "type": "array" },
+        "chatHistory": { "type": "array" },
+        "toolHistory": { "type": "array" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "title", "sources", "chatHistory", "toolHistory", "updatedAt"]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "User feedback on AI responses",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "messageId": { "type": "string" },
+        "value": { "enum": ["up", "down"] },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["userId", "sessionId", "messageId", "value", "timestamp"]
+    },
+    "Flashcard": {
+      "title": "Flashcard",
+      "description": "Spaced repetition flashcards",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "front": { "type": "string" },
+        "back": { "type": "string" },
+        "nextReview": { "type": "number" },
+        "interval": { "type": "number" },
+        "easeFactor": { "type": "number" },
+        "repetitions": { "type": "number" }
+      },
+      "required": ["userId", "front", "back", "nextReview", "interval", "easeFactor", "repetitions"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User progress and profile data",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "totalExp": { "type": "number" },
+        "level": { "type": "number" },
+        "quizzesCompleted": { "type": "number" },
+        "subjects": { "type": "object" },
+        "strengths": { "type": "array" },
+        "weaknesses": { "type": "array" },
+        "bio": { "type": "string" },
+        "learningGoal": { "type": "string" },
+        "dailyStreak": { "type": "number" },
+        "lastActiveAt": { "type": "number" }
+      },
+      "required": ["userId", "name", "totalExp", "level", "quizzesCompleted", "subjects", "strengths", "weaknesses"]
+    },
+    "SavedResource": {
+      "title": "Saved Resource",
+      "description": "User generated educational resource",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "enum": ["quiz", "flashcards", "concept_map", "visualization", "practice-problem", "summary"] },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "type", "title", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/Session" },
+      "description": "Store sessions"
+    },
+    "/labSessions/{labSessionId}": {
+      "schema": { "$ref": "#/entities/LabSession" },
+      "description": "Store lab sessions with document context"
+    },
+    "/profiles/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Store user profiles"
+    },
+    "/feedbacks/{feedbackId}": {
+      "schema": { "$ref": "#/entities/Feedback" },
+      "description": "Store feedback"
+    },
+    "/flashcards/{flashcardId}": {
+      "schema": { "$ref": "#/entities/Flashcard" },
+      "description": "Store flashcards for SRS"
+    },
+    "/resources/{resourceId}": {
+      "schema": { "$ref": "#/entities/SavedResource" },
+      "description": "Store user generated resources"
+    }
+  }
+}

@@ -1,0 +1,166 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    function isValidSession(data) {
+      return data.keys().hasAll(['userId', 'title', 'messages', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() <= 200 &&
+             data.messages is list && data.messages.size() <= 1000 &&
+             data.updatedAt is number;
+    }
+
+    function isValidFeedback(data) {
+      return data.keys().hasAll(['userId', 'sessionId', 'messageId', 'value', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.sessionId is string && data.sessionId.size() <= 128 &&
+             data.messageId is string && data.messageId.size() <= 128 &&
+             data.value in ['up', 'down'] &&
+             data.timestamp is number;
+    }
+
+    function isValidFlashcard(data) {
+      return data.keys().hasAll(['userId', 'front', 'back', 'nextReview', 'interval', 'easeFactor', 'repetitions']) &&
+             data.userId == request.auth.uid &&
+             data.front is string && data.front.size() <= 2000 &&
+             data.back is string && data.back.size() <= 2000 &&
+             data.nextReview is number &&
+             data.interval is number &&
+             data.easeFactor is number &&
+             data.repetitions is number;
+    }
+
+    function isValidProfile(data) {
+      return data.keys().hasAll(['userId', 'name', 'totalExp', 'level', 'quizzesCompleted', 'subjects', 'strengths', 'weaknesses', 'bio', 'learningGoal', 'dailyStreak', 'lastActiveAt']) &&
+             data.userId == request.auth.uid &&
+             data.name is string && data.name.size() <= 100 &&
+             data.totalExp is number &&
+             data.level is number &&
+             data.quizzesCompleted is number &&
+             data.subjects is map &&
+             data.strengths is list && data.strengths.size() <= 50 &&
+             data.weaknesses is list && data.weaknesses.size() <= 50 &&
+             data.bio is string && data.bio.size() <= 500 &&
+             data.learningGoal is string && data.learningGoal.size() <= 200 &&
+             data.dailyStreak is number &&
+             data.lastActiveAt is number;
+    }
+
+    function isValidLabSession(data) {
+      return data.keys().hasAll(['userId', 'title', 'sources', 'chatHistory', 'toolHistory', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() <= 200 &&
+             data.sources is list && data.sources.size() <= 50 &&
+             data.chatHistory is list && data.chatHistory.size() <= 1000 &&
+             data.toolHistory is list && data.toolHistory.size() <= 500 &&
+             data.updatedAt is number;
+    }
+
+    function isValidSavedResource(data) {
+      return data.keys().hasAll(['userId', 'type', 'title', 'content', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.type in ['quiz', 'flashcards', 'concept_map', 'visualization', 'practice-problem', 'summary'] &&
+             data.title is string && data.title.size() <= 1000 &&
+             data.content is string && data.content.size() <= 1048487 &&
+             data.createdAt is number;
+    }
+
+    match /profiles/{userId} {
+      allow read: if isSignedIn() && userId == request.auth.uid;
+      allow create: if isSignedIn() && 
+                       userId == request.auth.uid &&
+                       isValidProfile(incoming()) &&
+                       incoming().keys().size() == 12;
+                       
+      allow update: if isSignedIn() &&
+                       userId == request.auth.uid &&
+                       isValidProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['userId', 'name', 'totalExp', 'level', 'quizzesCompleted', 'subjects', 'strengths', 'weaknesses', 'bio', 'learningGoal', 'dailyStreak', 'lastActiveAt']);
+    }
+
+    match /labSessions/{labSessionId} {
+      allow create: if isSignedIn() &&
+                       isValidId(labSessionId) &&
+                       isValidLabSession(incoming()) &&
+                       incoming().keys().size() == 6;
+
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow update: if isSignedIn() && 
+                       isValidLabSession(incoming()) && 
+                       incoming().userId == existing().userId &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'sources', 'chatHistory', 'toolHistory', 'updatedAt']);
+                       
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    match /sessions/{sessionId} {
+      allow create: if isSignedIn() &&
+                       isValidId(sessionId) &&
+                       isValidSession(incoming()) &&
+                       incoming().keys().size() == 4;
+
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow update: if isSignedIn() && 
+                       isValidSession(incoming()) && 
+                       incoming().userId == existing().userId &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'messages', 'updatedAt']);
+                       
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    match /feedbacks/{feedbackId} {
+      allow create: if isSignedIn() &&
+                       isValidId(feedbackId) &&
+                       isValidFeedback(incoming()) &&
+                       incoming().keys().size() == 5;
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /flashcards/{flashcardId} {
+      allow create: if isSignedIn() &&
+                       isValidId(flashcardId) &&
+                       isValidFlashcard(incoming()) &&
+                       incoming().keys().size() == 7;
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() &&
+                       isValidFlashcard(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['nextReview', 'interval', 'easeFactor', 'repetitions']);
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+    match /resources/{resourceId} {
+      allow create: if isSignedIn() &&
+                       isValidId(resourceId) &&
+                       isValidSavedResource(incoming()) &&
+                       incoming().keys().size() == 5;
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() &&
+                       isValidId(resourceId) &&
+                       isValidSavedResource(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().type == existing().type &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content']);
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+  }
+}
