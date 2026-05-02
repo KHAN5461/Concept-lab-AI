@@ -1,3 +1,4 @@
+import './server/polyfills.js';
 import 'dotenv/config';
 import express from 'express';
 import multer from 'multer';

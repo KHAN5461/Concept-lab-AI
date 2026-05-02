@@ -1,16 +1,16 @@
-// Critical polyfills for Vercel/Serverless environment
-if (typeof (globalThis as any).DOMMatrix === 'undefined') {
-  (globalThis as any).DOMMatrix = class {};
-}
-if (typeof (globalThis as any).ImageData === 'undefined') {
-  (globalThis as any).ImageData = class {};
-}
-if (typeof (globalThis as any).Path2D === 'undefined') {
-  (globalThis as any).Path2D = class {};
-}
-if (typeof (globalThis as any).HTMLCanvasElement === 'undefined') {
-  (globalThis as any).HTMLCanvasElement = class {};
-}
-
+import '../server/polyfills.js';
 import app from '../server.ts';
-export default app;
+
+export default async (req: any, res: any) => {
+  try {
+    return await app(req, res);
+  } catch (err: any) {
+    console.error('VERCEL API CRASH:', err);
+    res.status(500).json({
+      error: 'Vercel API Crash',
+      message: err.message,
+      stack: err.stack,
+      environment: process.env.VERCEL === '1' ? 'Vercel' : 'Local'
+    });
+  }
+};
