@@ -567,14 +567,26 @@ export function LabWorkspace({ onClose, isSplit }: { onClose?: () => void, isSpl
         body: JSON.stringify({ query: newMsg.content, sourceId: selectedSourceId })
       });
       const data = await res.json();
-      addChatMessage({
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.text,
-        citations: data.citations
-      });
+      
+      if (data.error) {
+        toast.error('AI Error', { description: data.error });
+        addChatMessage({
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `⚠️ **Error:** ${data.error}`,
+          citations: []
+        });
+      } else {
+        addChatMessage({
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.text || "No response generated.",
+          citations: data.citations
+        });
+      }
     } catch (err) {
       console.error(err);
+      toast.error('Communication error with Synthesis node');
     } finally {
       setChatLoading(false);
     }

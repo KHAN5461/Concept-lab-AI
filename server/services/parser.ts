@@ -1,10 +1,19 @@
+// Polyfill for Vercel/Node environment where pdf-parse might expect browser globals
+if (typeof (globalThis as any).DOMMatrix === 'undefined') {
+  (globalThis as any).DOMMatrix = class {};
+}
+if (typeof (globalThis as any).ImageData === 'undefined') {
+  (globalThis as any).ImageData = class {};
+}
+if (typeof (globalThis as any).Path2D === 'undefined') {
+  (globalThis as any).Path2D = class {};
+}
+if (typeof (globalThis as any).HTMLCanvasElement === 'undefined') {
+  (globalThis as any).HTMLCanvasElement = class {};
+}
+
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-
-// Polyfill for Vercel/Node environment where pdf-parse might expect browser globals
-if (typeof (global as any).DOMMatrix === 'undefined') {
-  (global as any).DOMMatrix = class {};
-}
 
 export async function parsePdf(buffer: Buffer): Promise<string> {
   try {

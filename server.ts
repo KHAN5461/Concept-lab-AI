@@ -10,7 +10,6 @@ import { generateFlashcards } from './server/tools/flashcardTool.js';
 import { generateQuiz } from './server/tools/quizTool.js';
 import { generateVisualization } from './server/tools/visualizationTool.js';
 import * as libGemini from './server/services/libGemini.js';
-import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
 
@@ -43,6 +42,24 @@ const saveMemoryDocs = () => {
 };
 
 app.use(express.json());
+
+app.get('/api/health', (req, res) => {
+  const key = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  const keyPresent = !!key;
+  const keySnippet = keyPresent ? `${key.substring(0, 4)}...${key.substring(key.length - 4)}` : 'missing';
+  
+  res.json({
+    status: 'ok',
+    environment: process.env.VERCEL === '1' ? 'Vercel' : 'Local/Other',
+    nodeVersion: process.version,
+    aiConfig: {
+      keyPresent,
+      keySnippet,
+      model: 'gemini-3-flash-preview'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
 
 app.get('/api/debug-env', (req, res) => {
   const key = process.env.API_KEY || process.env.GEMINI_API_KEY;
@@ -241,27 +258,37 @@ app.use('/api', (req: express.Request, res: express.Response) => {
 async function startServer() {
   const PORT = 3000;
 
+  // Vite & Static serving configuration
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    const { createServer } = await import('vite');
+    const vite = await createServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
+  } else if (process.env.VERCEL !== '1') {
+    // Only serve static files via Express if NOT on Vercel
+    // Vercel handles static serving via its own edge network for files in /dist
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req: express.Request, res: express.Response) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+      app.get('*', (req: express.Request, res: express.Response) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
   }
 
-  if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
+  // Only start a listening server if NOT on Vercel
+  if (process.env.NODE_ENV !== 'production' || (process.env.VERCEL !== '1' && process.env.NODE_ENV === 'production')) {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   }
 }
 
-startServer();
+// In some environments (like Vercel functions), we might want to ensure the app is ready.
+// However, Express apps for Vercel should be exported directly.
+// We execute startServer but it handles its own conditional logic for dev/prod.
+startServer().catch(err => console.error("Failed to start server:", err));
 
 export default app;
